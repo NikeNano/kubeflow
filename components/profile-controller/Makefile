@@ -2,8 +2,10 @@ PROJECT ?= kubeflow-dev
 # Image URL to use all building/pushing image targets
 IMG ?= gcr.io/$(PROJECT)/profile-controller
 TAG ?= $(eval TAG := $(shell date +v%Y%m%d)-$(shell git describe --tags --always --dirty)-$(shell git diff | shasum -a256 | cut -c -6))$(TAG)
-GOLANG_VERSION ?= 1.15
-CONTROLLER_GEN_VERSION ?= 0.4.0
+GOLANG_VERSION ?= 1.12.5
+
+# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
+CRD_OPTIONS ?= "crd:trivialVersions=true"
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -32,14 +34,12 @@ install:
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
-	cd config/manager && kustomize edit set image gcr.io/kubeflow-images-public/profile-controller=${IMG}
+	cd config/manager && kustomize edit set image controller=${IMG}
 	kustomize build config/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen
-	$(CONTROLLER_GEN) crd:trivialVersions=true paths="./..." output:crd:artifacts:config=config/crd/bases
-	# Uncomment when we remove the permissive ClusterRoleBinding to cluster-admin
-	# $(CONTROLLER_GEN) rbac:roleName=cluster-role-binding webhook paths="./..."
+	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 # Run go fmt against code
 fmt:
@@ -55,7 +55,7 @@ generate: controller-gen
 
 # Build the docker image
 build:
-	docker build --build-arg GOLANG_VERSION=${GOLANG_VERSION} -t ${IMG}:${TAG} .
+	docker build -t ${IMG}:${TAG} .
 	@echo Built ${IMG}:${TAG}
 
 build-gcb:
@@ -74,7 +74,7 @@ push: build
 # download controller-gen if necessary
 controller-gen:
 ifeq (, $(shell which controller-gen))
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v${CONTROLLER_GEN_VERSION}
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.0
 CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)

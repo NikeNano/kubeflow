@@ -1,5 +1,5 @@
-IMG ?= public.ecr.aws/j1r0q0g6/notebooks/tensorboards-web-app
-TAG ?= $(shell git log -n 1 --pretty=format:"%h" ./)
+IMG ?= konstantinosand/twa
+TAG ?= v1
 DOCKERFILE=tensorboards/Dockerfile
 
 docker-build:

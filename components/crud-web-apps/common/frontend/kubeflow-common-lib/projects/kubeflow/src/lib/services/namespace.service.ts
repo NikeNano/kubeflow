@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ReplaySubject, Subscription, fromEvent, BehaviorSubject } from 'rxjs';
-import { DashboardState } from '../enums/dashboard';
+import { ReplaySubject, Subscription, fromEvent } from 'rxjs';
 
 declare global {
   interface Window {
@@ -16,13 +15,9 @@ export class NamespaceService {
 
   // Observable string sources
   private selectedNamespaceSource = new ReplaySubject<string>(1);
-  private dashboardConnectedSource = new BehaviorSubject<DashboardState>(
-    DashboardState.Connecting,
-  );
 
   // Observable string streams
   selectedNamespace$ = this.selectedNamespaceSource.asObservable();
-  dashboardConnected$ = this.dashboardConnectedSource.asObservable();
 
   constructor() {
     fromEvent(window, 'load').subscribe(_ => {
@@ -39,14 +34,7 @@ export class NamespaceService {
             cdeh.onNamespaceSelected = this.updateSelectedNamespace.bind(this);
           },
         );
-
-        this.dashboardConnectedSource.next(DashboardState.Connected);
-        return;
-      }
-
-      this.dashboardConnectedSource.next(DashboardState.Disconnected);
-
-      if (this.currNamespace === undefined) {
+      } else if (this.currNamespace === undefined) {
         this.updateSelectedNamespace('kubeflow-user');
       }
     });

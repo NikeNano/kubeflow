@@ -8,37 +8,32 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: deployment
+  name: controller-manager
+  namespace: system
+  labels:
+    control-plane: controller-manager
 spec:
+  selector:
+    matchLabels:
+      control-plane: controller-manager
   replicas: 1
   template:
     metadata:
-      annotations:
-        sidecar.istio.io/inject: "false"
+      labels:
+        control-plane: controller-manager
     spec:
       containers:
       - command:
         - /manager
-        - "-userid-header"
-        - $(USERID_HEADER)
-        - "-userid-prefix"
-        - $(USERID_PREFIX)
-        - "-workload-identity"
-        - $(WORKLOAD_IDENTITY)
-        envFrom:
-          - configMapRef:
-              name: config
-        image: gcr.io/kubeflow-images-public/profile-controller:vmaster-ga49f658f
-        imagePullPolicy: Always
+        args:
+        - --enable-leader-election
+        image: controller:latest
         name: manager
-        livenessProbe:
-          httpGet:
-            path: /metrics
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 30
-        ports:
-        - containerPort: 8080
-          name: manager-http
-          protocol: TCP
-      serviceAccountName: controller-service-account
+        resources:
+          limits:
+            cpu: 100m
+            memory: 30Mi
+          requests:
+            cpu: 100m
+            memory: 20Mi
+      terminationGracePeriodSeconds: 10

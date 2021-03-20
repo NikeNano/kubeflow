@@ -73,7 +73,6 @@ export class MainPage extends utilitiesMixin(PolymerElement) {
             menuLinks: {
                 type: Array,
                 value: [],
-                observer: '_menuLinksChanged',
             },
             externalLinks: {
                 type: Array,
@@ -202,21 +201,6 @@ export class MainPage extends utilitiesMixin(PolymerElement) {
         }
         this._setWorkgroupStatusHasLoaded(true);
     }
-
-    /**
-     * Simulate page changed to activate the correct menu link. This callback
-     * is called in response to the async call to /api/dashboard-links that
-     * happens at every page refresh.
-     *
-     * @param {Array} newValue - new menu links
-     */
-    _menuLinksChanged(newValue) {
-        if (newValue) {
-            this._routePageChanged(this.routeData.page, this.subRouteData.path,
-                this.routeHash.path);
-        }
-    }
-
     /**
      * Handles route changes by evaluating the page path component
      * @param {string} newPage
@@ -342,20 +326,14 @@ export class MainPage extends utilitiesMixin(PolymerElement) {
     _setActiveMenuLink(path, hashPath) {
         const htmlElements = this._clearActiveLink();
         let matchPath = path;
-        let matchingLink = '';
+        if (hashPath) {
+            matchPath = path + '#' + hashPath;
+        }
         const allLinks = this.menuLinks.map((m) => {
             return m.type === 'section' ? m.items.map((x) => x.link) : m.link;
         }).flat().sort();
-        if (hashPath) {
-            matchPath = path + '#' + hashPath;
-            matchingLink = allLinks
-                .find((l) => this.compareLinks(l, matchPath));
-        } else {
-            // longest prefix match - allLinks is sorted
-            allLinks.forEach((link) => {
-                matchingLink = path.startsWith(link) ? link : matchingLink;
-            });
-        }
+        const matchingLink = allLinks
+            .find((l) => this.compareLinks(l, matchPath));
         // find the HTML element that references the active link
         const activeMenuEl = Array.from(htmlElements).find(
             (x) => this.compareLinks(x.parentElement.href, matchingLink));

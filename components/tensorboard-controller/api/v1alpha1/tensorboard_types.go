@@ -50,7 +50,6 @@ type TensorboardStatus struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
 
 // Tensorboard is the Schema for the tensorboards API
 type Tensorboard struct {
